@@ -6,16 +6,25 @@ val linePos = ErrorMsg.linePos
 val commentCounter = ref 0
 fun err(p1,p2) = ErrorMsg.error p1
 
-fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
+fun eof() = 
+    let val pos = hd(!linePos)
+    in
+        if !commentCounter > 0 then
+            (
+                ErrorMsg.error pos ("Unclosed Comment");
+                Tokens.EOF(pos,pos)
+            )
+        else
+            Tokens.EOF(pos,pos)
+    end
 
 %%
 alpha=[A-Za-z];
 digit=[0-9];
 ws = [\ \t];
-%s INITIAL;
-%s COMMENT;
+%s COMMENT INITIAL;
 %%
-<INITIAL> \n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
+<INITIAL, COMMENT> \n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
 <INITIAL> {ws} => (continue());
 <INITIAL> "if" => (Tokens.IF(yypos, yypos+2));
 <INITIAL> "while" => (Tokens.WHILE(yypos, yypos+5));
@@ -49,18 +58,19 @@ ws = [\ \t];
 <INITIAL> "*" => (Tokens.TIMES(yypos, yypos+1));
 <INITIAL> "/" => (Tokens.DIVIDE(yypos, yypos+1));
 <INITIAL> "=" => (Tokens.EQ(yypos, yypos+1));
-<INITIAL> "<>" => (Tokens.NEQ(yypos, yypos+1));
+<INITIAL> "<>" => (Tokens.NEQ(yypos, yypos+2));
 <INITIAL> "<" => (Tokens.LT(yypos, yypos+1));
 <INITIAL> ">" => (Tokens.GT(yypos, yypos+1));
-<INITIAL> ">=" => (Tokens.GE(yypos, yypos+1));
-<INITIAL> "<=" => (Tokens.LE(yypos, yypos+1));
+<INITIAL> ">=" => (Tokens.GE(yypos, yypos+2));
+<INITIAL> "<=" => (Tokens.LE(yypos, yypos+2));
 <INITIAL> "&" => (Tokens.AND(yypos, yypos+1));
 <INITIAL> "|" => (Tokens.OR(yypos, yypos+1));
-<INITIAL> ":=" => (Tokens.ASSIGN(yypos, yypos+1));
+<INITIAL> ":=" => (Tokens.ASSIGN(yypos, yypos+2));
 <INITIAL> {alpha}+({alpha} | {digit} | "_")* => (Tokens.ID(yytext, yypos, yypos + String.size yytext));
-<INITIAL> [0-9]+        => (Tokens.INT(Option.valOf(Int.fromString(yytext)), yypos, yypos + (size yytext)));
+<INITIAL> {digit}+        => (Tokens.INT(Option.valOf(Int.fromString(yytext)), yypos, yypos + (size yytext)));
 <INITIAL> \"([ -\[\]-~]|(\\([nt\"\\]|[0-9][0-9][0-9]|[\n\t\r]+\\)))*\" => (Tokens.STRING(String.extract(yytext, 1, SOME((size yytext) - 2)), yypos, yypos + (size yytext)));
-<INITIAL,COMMENT> "/*"  => (YYBEGIN COMMENT; commentCounter:= !commentCounter+1; continue());
-<COMMENT> "*/"          => (if !commentCounter < 2 then (YYBEGIN (INITIAL)) else (); commentCounter:= !commentCounter-1; continue());
+<INITIAL> "/*"          => (YYBEGIN COMMENT; commentCounter:= !commentCounter+1; continue());
+<COMMENT> "/*"          => (commentCounter:= !commentCounter+1; continue());
+<COMMENT> "*/"          => (commentCounter:= !commentCounter-1; if !commentCounter <= 0 then (YYBEGIN (INITIAL)) else (); continue());
 <COMMENT> .             => (continue());
-<INITIAL> .                       => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+<INITIAL> .             => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
