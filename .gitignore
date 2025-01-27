@@ -1,1 +1,4 @@
+*.cm/
+lexer/*.tig
+lexer/*.lex.sml
 .DS_Store
