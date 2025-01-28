@@ -101,10 +101,3 @@ ws = [\ \t];
 <COMMENT> "*/"          => (commentCounter:= !commentCounter-1; if !commentCounter <= 0 then (YYBEGIN (INITIAL)) else (); continue());
 <COMMENT> .             => (continue());
 <INITIAL> .             => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
-
-"ahskdhsjkahdjksa\ 
-
-
-
-
-\ assjdhasiudhyuasih"
