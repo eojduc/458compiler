@@ -74,10 +74,9 @@ ws = [\ \t];
 <INITIAL> ":=" => (Tokens.ASSIGN(yypos, yypos+2));
 <INITIAL> {alpha}+({alpha} | {digit} | "_")* => (Tokens.ID(yytext, yypos, yypos + String.size yytext));
 <INITIAL> {digit}+        => (Tokens.INT(Option.valOf(Int.fromString(yytext)), yypos, yypos + (size yytext)));
-<INITIAL> "\""
-(* <INITIAL> \"([ -\[\]-~]|(\\([nt\"\\]|[0-9][0-9][0-9]|[\n\t\r]+\\)))*\" => (Tokens.STRING(String.extract(yytext, 1, SOME((size yytext) - 2)), yypos, yypos + (size yytext))); *)
 <INITIAL> "/*"          => (YYBEGIN COMMENT; commentCounter:= !commentCounter+1; continue());
 <COMMENT> "/*"          => (commentCounter:= !commentCounter+1; continue());
 <COMMENT> "*/"          => (commentCounter:= !commentCounter-1; if !commentCounter <= 0 then (YYBEGIN (INITIAL)) else (); continue());
 <COMMENT> .             => (continue());
 <INITIAL> .             => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+<INITIAL> "*/" => (ErrorMsg.error yypos ("closed comment without opening"); continue());
