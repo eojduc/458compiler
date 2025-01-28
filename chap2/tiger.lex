@@ -11,7 +11,7 @@ val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 val commentCounter = ref 0
 val currentString = ref ""
-val stringOpen = ref true
+val stringOpen = ref false
 val strStart = ErrorMsg.lineNum
 fun err(p1,p2) = ErrorMsg.error p1
 
@@ -22,9 +22,14 @@ fun eof() =
             (
                 ErrorMsg.error pos ("Unclosed Comment");
                 Tokens.EOF(pos,pos)
-            )
+            )            
         else
-            Tokens.EOF(pos,pos)
+            if !stringOpen then (
+                ErrorMsg.error pos ("Unclosed String");
+                Tokens.EOF(pos,pos)
+            )
+            else
+                Tokens.EOF(pos,pos)
     end
 
 fun getASCII (text, pos) =
@@ -93,7 +98,7 @@ ws = [\ \t];
 <COMMENT> "/*"          => (commentCounter:= !commentCounter+1; continue());
 <COMMENT> "*/"          => (commentCounter:= !commentCounter-1; if !commentCounter <= 0 then (YYBEGIN (INITIAL)) else (); continue());
 <COMMENT> .             => (continue());
-<INITIAL> "\""          => (YYBEGIN STRING; stringOpen := true; currentString := ""; continue());
+<INITIAL> "\""          => (YYBEGIN STRING; strStart := !lineNum; stringOpen := true; currentString := ""; continue());
 <STRING> "\""          => (YYBEGIN INITIAL; stringOpen := false; Tokens.STRING(!currentString, yypos, yypos + 1));
 <STRING> \\n           =>  (currentString := (!currentString ^ "\n"); continue());
 <STRING> \\t           =>       (currentString := (!currentString ^ "\t"); continue());
