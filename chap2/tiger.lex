@@ -93,6 +93,7 @@ ws = [\ \t];
 <INITIAL> "|" => (Tokens.OR(yypos, yypos+1));
 <INITIAL> ":=" => (Tokens.ASSIGN(yypos, yypos+2));
 <INITIAL> {alpha}+({alpha} | {digit} | "_")* => (Tokens.ID(yytext, yypos, yypos + String.size yytext));
+
 <INITIAL> {digit}+     => (Tokens.INT(Option.valOf(Int.fromString(yytext)), yypos, yypos + (size yytext)));
 <INITIAL> "/*"          => (YYBEGIN COMMENT; commentCounter:= !commentCounter+1; continue());
 <COMMENT> "/*"          => (commentCounter:= !commentCounter+1; continue());
@@ -110,3 +111,8 @@ ws = [\ \t];
 <STRING> \\\\            =>   (currentString := (!currentString ^ "\\"); continue());
 <STRING> .              => (continue());
 <INITIAL> .             => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+<INITIAL> "*/"          => (ErrorMsg.error yypos ("closed comment without opening"); continue());
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
