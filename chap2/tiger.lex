@@ -9,6 +9,9 @@ type lexresult = Tokens.token
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 val commentCounter = ref 0
+val currentString = ref ""
+val stringOpen = true
+val strStart = ErrorMsg.lineNum
 fun err(p1,p2) = ErrorMsg.error p1
 
 fun eof() = 
@@ -23,6 +26,15 @@ fun eof() =
             Tokens.EOF(pos,pos)
     end
 
+fun getASCII (text, pos) =
+    let val asciiInt = Int.fromString (String.extract(text, 1))
+    in
+        if val > 255 then
+            ErrorMsg.error pos ("Invalid ASCII Code: " ^ text);
+            ""
+        else
+            Char.chr asciiInt
+    end
 
 %%
 alpha=[A-Za-z];
@@ -73,11 +85,26 @@ ws = [\ \t];
 <INITIAL> "|" => (Tokens.OR(yypos, yypos+1));
 <INITIAL> ":=" => (Tokens.ASSIGN(yypos, yypos+2));
 <INITIAL> {alpha}+({alpha} | {digit} | "_")* => (Tokens.ID(yytext, yypos, yypos + String.size yytext));
-<INITIAL> {digit}+        => (Tokens.INT(Option.valOf(Int.fromString(yytext)), yypos, yypos + (size yytext)));
-<INITIAL> "\""
+<INITIAL> {digit}+     => (Tokens.INT(Option.valOf(Int.fromString(yytext)), yypos, yypos + (size yytext)));
+<INITIAL> "\""         => (YYBEGIN STRING; stringOpen := true; currentString := ""; continue());
+<STRING> [ -\[\]-~]    => (currentString := (!currentString ^ yytext); continue());
+<STRING> \\n           =>       (currentString := (!currentString ^ "\n"); continue());
+<STRING> \\t           =>       (currentString := (!currentString ^ "\t"); continue());
+<STRING> "\\""         =>       (currentString := (!currentString ^ "\""); continue());
+<STRING> \\[0-9][0-9][0-9]  =>  (currentString := (!currentString ^ (getASCII (yytext, yypos))); continue());
+<STRING> \\            =>   (currentString := (!currentString ^ "\\"); continue());
+<STRING> \\[\n\t\r]+\\  =>   (continue());
+<STRING> "\""          => (YYBEGIN INITIAL; stringOpen := false; Tokens.STRING(!currentString, yypos, yypos + 1));
 (* <INITIAL> \"([ -\[\]-~]|(\\([nt\"\\]|[0-9][0-9][0-9]|[\n\t\r]+\\)))*\" => (Tokens.STRING(String.extract(yytext, 1, SOME((size yytext) - 2)), yypos, yypos + (size yytext))); *)
 <INITIAL> "/*"          => (YYBEGIN COMMENT; commentCounter:= !commentCounter+1; continue());
 <COMMENT> "/*"          => (commentCounter:= !commentCounter+1; continue());
 <COMMENT> "*/"          => (commentCounter:= !commentCounter-1; if !commentCounter <= 0 then (YYBEGIN (INITIAL)) else (); continue());
 <COMMENT> .             => (continue());
 <INITIAL> .             => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+
+"ahskdhsjkahdjksa\ 
+
+
+
+
+\ assjdhasiudhyuasih"
