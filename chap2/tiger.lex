@@ -2,6 +2,7 @@
     How does this string regex work?
     [ -\[\]-~] - Match the printable characters other than \ (that is match the characters between space and [, and ] and ~)
 *)
+(* <INITIAL> \"([ -\[\]-~]|(\\([nt\"\\]|[0-9][0-9][0-9]|[\n\t\r]+\\)))*\" => (Tokens.STRING(String.extract(yytext, 1, SOME((size yytext) - 2)), yypos, yypos + (size yytext))); *)
 
 type pos = int
 type lexresult = Tokens.token
@@ -10,7 +11,7 @@ val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 val commentCounter = ref 0
 val currentString = ref ""
-val stringOpen = true
+val stringOpen = ref true
 val strStart = ErrorMsg.lineNum
 fun err(p1,p2) = ErrorMsg.error p1
 
@@ -27,13 +28,15 @@ fun eof() =
     end
 
 fun getASCII (text, pos) =
-    let val asciiInt = Int.fromString (String.extract(text, 1))
+    let val asciiInt = valOf(Int.fromString (String.extract(text, 1, NONE)))
     in
-        if val > 255 then
-            ErrorMsg.error pos ("Invalid ASCII Code: " ^ text);
-            ""
+        if asciiInt > 255 then
+            (
+                ErrorMsg.error pos ("Invalid ASCII Code: " ^ text);
+                ""
+            )
         else
-            Char.chr asciiInt
+            String.str (Char.chr asciiInt)
     end
 
 %%
@@ -87,23 +90,24 @@ ws = [\ \t];
 <INITIAL> {alpha}+({alpha} | {digit} | "_")* => (Tokens.ID(yytext, yypos, yypos + String.size yytext));
 
 <INITIAL> {digit}+     => (Tokens.INT(Option.valOf(Int.fromString(yytext)), yypos, yypos + (size yytext)));
-<INITIAL> "\""         => (YYBEGIN STRING; stringOpen := true; currentString := ""; continue());
-<STRING> [ -\[\]-~]    => (currentString := (!currentString ^ yytext); continue());
-<STRING> \\n           =>       (currentString := (!currentString ^ "\n"); continue());
-<STRING> \\t           =>       (currentString := (!currentString ^ "\t"); continue());
-<STRING> "\\""         =>       (currentString := (!currentString ^ "\""); continue());
-<STRING> \\[0-9][0-9][0-9]  =>  (currentString := (!currentString ^ (getASCII (yytext, yypos))); continue());
-<STRING> \\            =>   (currentString := (!currentString ^ "\\"); continue());
-<STRING> \\[\n\t\r]+\\  =>   (continue());
-<STRING> "\""          => (YYBEGIN INITIAL; stringOpen := false; Tokens.STRING(!currentString, yypos, yypos + 1));
-
-(* <INITIAL> \"([ -\[\]-~]|(\\([nt\"\\]|[0-9][0-9][0-9]|[\n\t\r]+\\)))*\" => (Tokens.STRING(String.extract(yytext, 1, SOME((size yytext) - 2)), yypos, yypos + (size yytext))); *)
 <INITIAL> "/*"          => (YYBEGIN COMMENT; commentCounter:= !commentCounter+1; continue());
 <COMMENT> "/*"          => (commentCounter:= !commentCounter+1; continue());
 <COMMENT> "*/"          => (commentCounter:= !commentCounter-1; if !commentCounter <= 0 then (YYBEGIN (INITIAL)) else (); continue());
 <COMMENT> .             => (continue());
+<INITIAL> "\""          => (YYBEGIN STRING; print "Opened String\n"; stringOpen := true; currentString := ""; continue());
+<STRING> "\""          => (YYBEGIN INITIAL; print "Closed String\n"; stringOpen := false; Tokens.STRING(!currentString, yypos, yypos + 1));
+<STRING> \\n           =>  (currentString := (!currentString ^ "\n"); continue());
+<STRING> \\t           =>       (currentString := (!currentString ^ "\t"); continue());
+<STRING> "\\\""         =>       (currentString := (!currentString ^ "\""); continue());
+<STRING> \\[0-9][0-9][0-9]  =>  (currentString := (!currentString ^ (getASCII (yytext, yypos))); continue());
+<STRING> [ -\[\]-~]    => (currentString := (!currentString ^ yytext); continue());
+<STRING> \n          => (lineNum := !lineNum+1; linePos := yypos :: !linePos; ErrorMsg.error yypos ("Illegal String. Contains new line."); continue());
+<STRING> \\[\n\t\r]+\\  =>   (continue());
+<STRING> \\\\            =>   (currentString := (!currentString ^ "\\"); continue());
+<STRING> .              => (continue());
 <INITIAL> .             => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+<INITIAL> "*/"          => (ErrorMsg.error yypos ("closed comment without opening"); continue());
 <<<<<<< Updated upstream
 =======
-<INITIAL> "*/"          => (ErrorMsg.error yypos ("closed comment without opening"); continue());
+
 >>>>>>> Stashed changes
