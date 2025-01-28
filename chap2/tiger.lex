@@ -1,3 +1,8 @@
+(*
+    How does this string regex work?
+    [ -\[\]-~] - Match the printable characters other than \ (that is match the characters between space and [, and ] and ~)
+*)
+
 type pos = int
 type lexresult = Tokens.token
 
@@ -18,11 +23,12 @@ fun eof() =
             Tokens.EOF(pos,pos)
     end
 
+
 %%
 alpha=[A-Za-z];
 digit=[0-9];
 ws = [\ \t];
-%s COMMENT INITIAL;
+%s COMMENT INITIAL STRING;
 %%
 <INITIAL, COMMENT> \n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
 <INITIAL> {ws} => (continue());
@@ -68,7 +74,8 @@ ws = [\ \t];
 <INITIAL> ":=" => (Tokens.ASSIGN(yypos, yypos+2));
 <INITIAL> {alpha}+({alpha} | {digit} | "_")* => (Tokens.ID(yytext, yypos, yypos + String.size yytext));
 <INITIAL> {digit}+        => (Tokens.INT(Option.valOf(Int.fromString(yytext)), yypos, yypos + (size yytext)));
-<INITIAL> \"([ -\[\]-~]|(\\([nt\"\\]|[0-9][0-9][0-9]|[\n\t\r]+\\)))*\" => (Tokens.STRING(String.extract(yytext, 1, SOME((size yytext) - 2)), yypos, yypos + (size yytext)));
+<INITIAL> "\""
+(* <INITIAL> \"([ -\[\]-~]|(\\([nt\"\\]|[0-9][0-9][0-9]|[\n\t\r]+\\)))*\" => (Tokens.STRING(String.extract(yytext, 1, SOME((size yytext) - 2)), yypos, yypos + (size yytext))); *)
 <INITIAL> "/*"          => (YYBEGIN COMMENT; commentCounter:= !commentCounter+1; continue());
 <COMMENT> "/*"          => (commentCounter:= !commentCounter+1; continue());
 <COMMENT> "*/"          => (commentCounter:= !commentCounter-1; if !commentCounter <= 0 then (YYBEGIN (INITIAL)) else (); continue());
