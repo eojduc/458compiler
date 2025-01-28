@@ -93,26 +93,21 @@ ws = [\ \t];
 <INITIAL> "|" => (Tokens.OR(yypos, yypos+1));
 <INITIAL> ":=" => (Tokens.ASSIGN(yypos, yypos+2));
 <INITIAL> {alpha}+({alpha} | {digit} | "_")* => (Tokens.ID(yytext, yypos, yypos + String.size yytext));
-
-<INITIAL> {digit}+     => (Tokens.INT(Option.valOf(Int.fromString(yytext)), yypos, yypos + (size yytext)));
-<INITIAL> "/*"          => (YYBEGIN COMMENT; commentCounter:= !commentCounter+1; continue());
-<COMMENT> "/*"          => (commentCounter:= !commentCounter+1; continue());
-<COMMENT> "*/"          => (commentCounter:= !commentCounter-1; if !commentCounter <= 0 then (YYBEGIN (INITIAL)) else (); continue());
-<COMMENT> .             => (continue());
-<INITIAL> "\""          => (YYBEGIN STRING; strStart := !lineNum; stringOpen := true; currentString := ""; continue());
-<STRING> "\""          => (YYBEGIN INITIAL; stringOpen := false; Tokens.STRING(!currentString, yypos, yypos + 1));
-<STRING> \\n           =>  (currentString := (!currentString ^ "\n"); continue());
-<STRING> \\t           =>       (currentString := (!currentString ^ "\t"); continue());
-<STRING> "\\\""         =>       (currentString := (!currentString ^ "\""); continue());
-<STRING> \\[0-9][0-9][0-9]  =>  (currentString := (!currentString ^ (getASCII (yytext, yypos))); continue());
-<STRING> [ -\[\]-~]    => (currentString := (!currentString ^ yytext); continue());
-<STRING> \n          => (lineNum := !lineNum+1; linePos := yypos :: !linePos; ErrorMsg.error yypos ("Illegal String. Contains new line."); continue());
-<STRING> \\[\n\t\r]+\\  =>   (continue());
-<STRING> \\\\            =>   (currentString := (!currentString ^ "\\"); continue());
-<STRING> .              => (continue());
-<INITIAL> .             => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
-<INITIAL> "*/"          => (ErrorMsg.error yypos ("closed comment without opening"); continue());
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
+<INITIAL> {digit}+          => (Tokens.INT(Option.valOf(Int.fromString(yytext)), yypos, yypos + (size yytext)));
+<INITIAL> "/*"              => (YYBEGIN COMMENT; commentCounter:= !commentCounter+1; continue());
+<COMMENT> "/*"              => (commentCounter:= !commentCounter+1; continue());
+<COMMENT> "*/"              => (commentCounter:= !commentCounter-1; if !commentCounter <= 0 then (YYBEGIN (INITIAL)) else (); continue());
+<COMMENT> .                 => (continue());
+<INITIAL> "*/"              => (ErrorMsg.error yypos ("closed comment without opening"); continue());
+<INITIAL> "\""              => (YYBEGIN STRING; strStart := !lineNum; stringOpen := true; currentString := ""; continue());
+<STRING> "\""               => (YYBEGIN INITIAL; stringOpen := false; Tokens.STRING(!currentString, yypos, yypos + 1));
+<STRING> \\n                => (currentString := (!currentString ^ "\n"); continue());
+<STRING> \\t                => (currentString := (!currentString ^ "\t"); continue());
+<STRING> "\\\""             => (currentString := (!currentString ^ "\""); continue());
+<STRING> \\[0-9][0-9][0-9]  => (currentString := (!currentString ^ (getASCII (yytext, yypos))); continue());
+<STRING> [ -\[\]-~]         => (currentString := (!currentString ^ yytext); continue());
+<STRING> \n                 => (lineNum := !lineNum+1; linePos := yypos :: !linePos; ErrorMsg.error yypos ("Illegal String. Contains new line."); continue());
+<STRING> \\[\n\t\r]+\\      => (continue());
+<STRING> \\\\               => (currentString := (!currentString ^ "\\"); continue());
+<STRING> .                  => (continue());
+<INITIAL> .                 => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
