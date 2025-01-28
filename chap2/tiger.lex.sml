@@ -304,9 +304,9 @@ fun yyAction46 (strm, lastMatch : yymatch) = (yystrm := strm;
       (commentCounter:= !commentCounter-1; if !commentCounter <= 0 then (YYBEGIN (INITIAL)) else (); continue()))
 fun yyAction47 (strm, lastMatch : yymatch) = (yystrm := strm; (continue()))
 fun yyAction48 (strm, lastMatch : yymatch) = (yystrm := strm;
-      (YYBEGIN STRING; print "Opened String\n"; stringOpen := true; currentString := ""; continue()))
+      (YYBEGIN STRING; stringOpen := true; currentString := ""; continue()))
 fun yyAction49 (strm, lastMatch : yymatch) = (yystrm := strm;
-      (YYBEGIN INITIAL; print "Closed String\n"; stringOpen := false; Tokens.STRING(!currentString, yypos, yypos + 1)))
+      (YYBEGIN INITIAL; stringOpen := false; Tokens.STRING(!currentString, yypos, yypos + 1)))
 fun yyAction50 (strm, lastMatch : yymatch) = (yystrm := strm;
       (currentString := (!currentString ^ "\n"); continue()))
 fun yyAction51 (strm, lastMatch : yymatch) = (yystrm := strm;

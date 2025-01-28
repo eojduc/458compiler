@@ -1,7 +1,12 @@
 /* a record type and a record variable */
 let
 	type  rectype = {name:string, age:int}
-	var rec1:rectype := rectype {name="Nobody", age=1000}
+	var rec1:rectype := rectype {name="Nobody\t", age=1000}
+	var rec1:rectype := rectype {name="Nobody\ta\n\100", age=1000}
+	var rec1:rectype := rectype {name="Nobody\ta\n\340", age=1000}
+	var rec1:rectype := rectype {name="Nobody\
+	
+	\ asjdhaksj", age=1000}
 in
 	rec1.name := "Somebody";
 	rec1

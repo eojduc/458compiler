@@ -1,3 +1,10 @@
-*//*/*
-    ifelse /* */
-*/*/
+"abcde"
+"abcde\tabcde"
+"abcde\nabcde"
+"abcde\
+
+\abcde"
+"abcde\""
+"abcde\\"
+"abcde \100"
+"abcde \300"
